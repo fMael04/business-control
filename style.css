@@ -20,12 +20,36 @@ body {
     overflow-x: hidden;
 }
 
-h2, .mono-font { font-family: 'Courier New', Courier, monospace; font-weight: bold; letter-spacing: -0.5px; }
+h2, .mono-font, .section-title { font-family: 'Courier New', Courier, monospace; font-weight: bold; letter-spacing: -0.5px; }
 
-h2 { 
+.section-title { 
     text-align: center; color: var(--htb-green); text-transform: uppercase; 
     margin: 25px 0 15px 0; text-shadow: 0 0 20px rgba(159, 239, 0, 0.2);
 }
+
+/* LOGIN SCREEN */
+.login-container {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--htb-bg-dark); z-index: 2000;
+    display: flex; align-items: center; justify-content: center;
+}
+.login-box {
+    background: var(--htb-bg-card); padding: 40px; border-radius: 16px;
+    border: 1px solid #2d4063; text-align: center; max-width: 90%;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+.login-box h2 { color: var(--htb-green); margin-bottom: 10px; }
+.login-box p { font-size: 14px; margin-bottom: 30px; opacity: 0.7; }
+.btn-google { background: #fff !important; color: #000 !important; display: flex; align-items: center; justify-content: center; box-shadow: none !important;}
+
+/* HEADER USUARIO */
+.app-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 15px 20px; background: #0f1621; border-bottom: 1px solid #2d4063;
+}
+.user-profile { display: flex; align-items: center; gap: 10px; }
+.user-profile img { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--htb-green); }
+.btn-icon-small { background: none; border: none; padding: 5px; cursor: pointer; }
 
 /* GENERAL SVG STYLE */
 svg { vertical-align: middle; }
@@ -108,7 +132,6 @@ details[open] summary::after { transform: rotate(180deg); }
     background: var(--htb-bg-input); color: var(--htb-text-bright); 
     cursor: pointer; flex-shrink: 0;
 }
-.btn-pay { color: var(--htb-text-bright); } 
 .btn-pay.pagado { background: var(--htb-green); color: #000; }
 .btn-del { border: 1px solid var(--htb-red); background: rgba(255, 75, 75, 0.1); color: var(--htb-red); }
 
@@ -145,9 +168,11 @@ details[open] summary::after { transform: rotate(180deg); }
 .filter-bar { background: var(--htb-bg-card); padding: 5px; border-radius: 12px; display: flex; gap: 5px; flex: 1; overflow-x: auto; }
 .filter-btn { flex: 1; padding: 12px; background: transparent; border: none; color: var(--htb-text-main); border-radius: 8px; font-family: monospace; font-size: 12px; white-space: nowrap; transition: 0.2s; }
 .filter-btn.active { background: var(--htb-green); color: #000; font-weight: bold; }
+
+/* CAMBIO AQUÍ: Tamaño ajustado para alinear mejor (42x42px) */
 .btn-snap-inline { 
     background: var(--htb-bg-card); border: 1px solid var(--htb-green); color: var(--htb-green); 
-    width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; 
+    width: 42px; height: 42px; border-radius: 8px; display: flex; align-items: center; justify-content: center; 
     cursor: pointer; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
 .btn-snap-inline:active { background: var(--htb-green); color: black; }
@@ -177,5 +202,3 @@ details[open] summary::after { transform: rotate(180deg); }
 .snap-actions { margin-top: 20px; display: flex; gap: 10px; width: 90%; max-width: 360px;}
 .btn-snap-dl { background: var(--htb-blue); color: white; border:none; padding: 12px; border-radius: 8px; flex: 1; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; }
 .btn-snap-close { background: var(--htb-red); color: white; border:none; padding: 12px; border-radius: 8px; width: 50px; cursor: pointer; display: flex; justify-content: center; align-items: center;}
-
-
