@@ -488,4 +488,47 @@ function openSnapModal() {
                 let displayMonto = `Q${monto}`;
                 let tdClass = 'amount'; 
                 
-            
+                if (monto < 0) { 
+                    displayMonto = `-Q${Math.abs(monto)}`; 
+                    tdClass = 'debt'; 
+                }
+
+                if (p.name !== lastUser) {
+                        content += `<tr><td colspan="3" style="padding-top:10px; color:#9fef00; font-weight:bold; border-bottom:none;">// ${p.name.toUpperCase()}</td></tr>`;
+                        lastUser = p.name;
+                }
+                content += `<tr><td>${fecha}</td><td>${concepto}</td><td class="${tdClass}">${displayMonto}</td></tr>`;
+                totalDeuda += monto;
+            });
+            content += `</tbody></table>`;
+            content += `<div class="snap-row-total">TOTAL GLOBAL: Q${totalDeuda}</div>`;
+        }
+    }
+    document.getElementById('snapContent').innerHTML = content;
+    document.getElementById('snapModal').style.display = 'flex';
+}
+
+function closeSnap() { document.getElementById('snapModal').style.display = 'none'; }
+function downloadSnap() {
+    const element = document.getElementById('captureTarget');
+    html2canvas(element, { backgroundColor: null, scale: 2 }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `HTB_Report_${new Date().getTime()}.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+    });
+}
+
+// =============================================================================
+// 11. NAVEGACIÓN
+// =============================================================================
+window.changePage = (page) => {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.getElementById('btn-' + page).classList.add('active');
+};
+
+// INIT (Fecha de hoy en input)
+const dateInput = document.getElementById('payDate');
+if(dateInput) dateInput.valueAsDate = new Date();
