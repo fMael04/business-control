@@ -3,115 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HTB Control v14</title>
+    <title>HTB Control Cloud</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- NÓMINA -->
-    <div id="page-nomina" class="page active">
-        <h2>_SYSTEM_PAYROLL</h2>
-        <div class="stats-grid">
-            <div class="stat-card"><div class="stat-label">Pendiente</div><div class="stat-value red" id="stat-pending">Q0</div></div>
-            <div class="stat-card"><div class="stat-label">Pagado</div><div class="stat-value" id="stat-paid">Q0</div></div>
-        </div>
-
-        <div class="form-card">
-            <select id="workerName">
-                <option value="Sara">User: Sara</option>
-                <option value="Seca">User: Seca</option>
-                <option value="Ambas">>> AMBAS (Doble)</option>
-            </select>
-            <div style="display: flex; gap: 10px;">
-                <input type="number" id="basePay" value="25" placeholder="Base">
-                <input type="number" id="discount" placeholder="Desc">
-            </div>
-            <input type="text" id="discReason" placeholder="Nota / Razón (Opcional)">
-            <input type="date" id="payDate" style="color-scheme: dark;">
-            <button class="btn-main" onclick="addEntry()">⚡ Execute_Add()</button>
-            <button class="btn-main btn-secondary" onclick="exportData()">📥 Export_Txt</button>
-        </div>
-
-        <div class="filter-container">
-            <div class="filter-bar">
-                <button class="filter-btn active" onclick="setFilter('all')">Todos</button>
-                <button class="filter-btn" onclick="setFilter('pending')">Pendientes</button>
-                <button class="filter-btn" onclick="setFilter('paid')">Pagados</button>
-            </div>
-            <!-- Icono Cámara -->
-            <button class="btn-snap-inline" onclick="openSnapModal()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+    <!-- PANTALLA DE LOGIN -->
+    <div id="login-screen" class="login-container">
+        <div class="login-box">
+            <h2>_SYSTEM_ACCESS</h2>
+            <p>Identifícate para acceder a la base de datos.</p>
+            <button id="btnLogin" class="btn-main btn-google">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right:10px"><path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/></svg>
+                Acceder con Google
             </button>
         </div>
+    </div>
+
+    <!-- APP PRINCIPAL (Oculta hasta login) -->
+    <div id="app-content" style="display:none;">
         
-        <div id="payrollList"></div>
-    </div>
-
-    <!-- INVENTARIO -->
-    <div id="page-inventario" class="page">
-        <div class="inv-header">
-            <h2 style="margin:0; font-size: 20px;">_INVENTORY</h2>
-            <!-- Icono Reset -->
-            <button class="btn-reset" onclick="resetInventory()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> RESET
-            </button>
-        </div>
-        <div class="add-inv-row">
-            <input type="text" id="newItemName" placeholder="Nuevo producto..." style="margin-bottom:0;">
-            <button class="btn-main btn-add-mini" onclick="addItemToList()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            </button>
-        </div>
-        
-        <div style="display:flex; justify-content: flex-end; margin-bottom: 10px;">
-             <button class="btn-snap-inline" style="width:100%; height:40px; font-size:14px; border-color:#2d4063; color:#a4b1cd; gap:8px;" onclick="openSnapModal()">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                Generar Reporte
-             </button>
-        </div>
-        <div class="inv-list" id="inventoryList"></div>
-    </div>
-
-    <!-- SETTINGS -->
-    <div id="page-settings" class="page">
-        <h2>_SYSTEM_DATA</h2>
-        <div class="form-card" style="text-align:center;">
-            <p style="color:#9fef00; font-weight:bold; margin-bottom:10px;">BACKUP</p>
-            <p style="color:#888; font-size:14px; margin-bottom:20px;">Descarga tus datos en JSON.</p>
-            <button class="btn-main" onclick="downloadBackup()">💾 Descargar JSON</button>
-            <div style="margin-top:30px; border-top:1px dashed #2d4063; padding-top:20px;">
-                <p style="color:#ff4b4b; font-weight:bold; margin-bottom:10px;">RESTAURAR</p>
-                <input type="file" id="backupFile" accept=".json" style="margin-bottom:15px; color:#aaa;">
-                <button class="btn-main btn-secondary" onclick="restoreBackup()">📂 Cargar JSON</button>
+        <!-- HEADER / USER INFO -->
+        <div class="app-header">
+            <div class="user-profile">
+                <img id="userPhoto" src="" alt="User">
+                <span id="userName" class="mono-font">Usuario</span>
             </div>
+            <button id="btnLogout" class="btn-icon-small">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4b4b" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </button>
+        </div>
+
+        <!-- PÁGINA NÓMINA -->
+        <div id="page-nomina" class="page active">
+            <h2 class="section-title">_PAYROLL</h2>
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-label">Pendiente</div><div class="stat-value red" id="stat-pending">Q0</div></div>
+                <div class="stat-card"><div class="stat-label">Pagado</div><div class="stat-value" id="stat-paid">Q0</div></div>
+            </div>
+
+            <div class="form-card">
+                <select id="workerName">
+                    <option value="Sara">User: Sara</option>
+                    <option value="Seca">User: Seca</option>
+                    <option value="Ambas">>> AMBAS (Doble)</option>
+                </select>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="basePay" value="25" placeholder="Base">
+                    <input type="number" id="discount" placeholder="Desc">
+                </div>
+                <input type="text" id="discReason" placeholder="Nota / Razón (Opcional)">
+                <input type="date" id="payDate" style="color-scheme: dark;">
+                <button id="btnAddEntry" class="btn-main">⚡ Execute_Add()</button>
+            </div>
+
+            <div class="filter-container">
+                <div class="filter-bar">
+                    <button class="filter-btn active" data-filter="all">Todos</button>
+                    <button class="filter-btn" data-filter="pending">Pendientes</button>
+                    <button class="filter-btn" data-filter="paid">Pagados</button>
+                </div>
+                <!-- BOTÓN SNAP REDUCIDO -->
+                <button class="btn-snap-inline" id="btnSnapPayroll">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                </button>
+            </div>
+            
+            <div id="payrollList"></div>
+        </div>
+
+        <!-- PÁGINA INVENTARIO -->
+        <div id="page-inventario" class="page">
+            <div class="inv-header">
+                <h2 class="section-title" style="margin:0;">_INVENTORY</h2>
+                <button class="btn-reset" id="btnResetInv">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M2.5 2v6h6M21.5 22v-6h-6"/><path d="M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"/></svg> RESET
+                </button>
+            </div>
+            <div class="add-inv-row">
+                <input type="text" id="newItemName" placeholder="Nuevo producto..." style="margin-bottom:0;">
+                <button class="btn-main btn-add-mini" id="btnAddItem">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+            </div>
+            <div class="stats-grid" style="margin: 0 0 15px 0;">
+                <div class="stat-card"><div class="stat-label">Stock Total</div><div class="stat-value" id="inv-total">0</div></div>
+                <div class="stat-card"><div class="stat-label">Items Activos</div><div class="stat-value" id="inv-active">0</div></div>
+            </div>
+            <div style="display:flex; justify-content: flex-end; margin-bottom: 10px;">
+                <button class="btn-snap-inline" id="btnSnapInv" style="width:100%; height:40px; font-size:14px; border-color:#2d4063; color:#a4b1cd; gap:8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    Reporte Stock
+                </button>
+            </div>
+            <div class="inv-list" id="inventoryList"></div>
+        </div>
+
+        <!-- NAVEGACIÓN -->
+        <div class="nav">
+            <button onclick="changePage('nomina')" class="active" id="btn-nomina">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                <span>Pagos</span>
+            </button>
+            <button onclick="changePage('inventario')" id="btn-inventario">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                <span>Stock</span>
+            </button>
         </div>
     </div>
 
-    <div class="nav">
-        <button onclick="showPage('nomina')" class="active" id="btn-nomina"><span>$</span>Pagos</button>
-        <button onclick="showPage('inventario')" id="btn-inventario"><span>#</span>Stock</button>
-        <button onclick="showPage('settings')" id="btn-settings"><span>⚙</span>Data</button>
-    </div>
-
-    <!-- SNAP MODAL -->
+    <!-- MODAL SNAP -->
     <div id="snapModal">
         <div class="snap-container" id="captureTarget">
             <div class="snap-title" id="snapTitle">REPORTE</div>
             <div id="snapContent"></div>
-            <div class="snap-footer">GENERATED BY HTB CONTROL V14</div>
+            <div class="snap-footer">GENERATED BY HTB CONTROL V15</div>
         </div>
         <div class="snap-actions">
-            <button class="btn-snap-close" onclick="closeSnap()">
+            <button class="btn-snap-close" id="btnCloseSnap">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
-            <button class="btn-snap-dl" onclick="downloadSnap()">
+            <button class="btn-snap-dl" id="btnDownloadSnap">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
                 Guardar
             </button>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- IMPORTANTE: type="module" para usar Firebase -->
+    <script type="module" src="script.js"></script>
 </body>
 </html>
+
+
