@@ -52,23 +52,21 @@ function renderPayroll() {
             const total = item.base - item.discount;
             const dateObj = new Date(item.date);
             const dateStr = `${dateObj.getDate()}/${dateObj.getMonth()+1}`;
-            
-            // Texto chiquito (F./Adel)
             const reasonText = item.reason ? item.reason : '';
             const smallText = `${dateStr} • F./Adel: Q${item.discount} <span class="reason-tag">(${reasonText})</span>`;
 
-            // Texto grande (Limpio)
             let displayMoney = `Q${total}`;
             let moneyClass = '';
             
             if (total < 0) {
-                displayMoney = `-Q${Math.abs(total)}`; // LIMPIO: Sin texto "ADELANTO"
+                displayMoney = `-Q${Math.abs(total)}`;
                 moneyClass = 'negative';
             } else if (total === 0) {
                 displayMoney = `SALDADO`;
                 moneyClass = 'zero';
             }
 
+            // ICONOS SVG EN LOS BOTONES
             contentDiv.innerHTML += `
                 <div class="card ${item.paid ? 'pagado' : ''}">
                     <div class="card-info">
@@ -79,8 +77,12 @@ function renderPayroll() {
                         <div class="money-display ${moneyClass}">${displayMoney}</div>
                     </div>
                     <div class="card-actions">
-                        <button class="btn-icon btn-pay ${item.paid ? 'pagado' : ''}" onclick="togglePay(${index})">✔</button>
-                        <button class="btn-icon btn-del" onclick="deleteEntry(${index})">🗑️</button>
+                        <button class="btn-icon btn-pay ${item.paid ? 'pagado' : ''}" onclick="togglePay(${index})">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </button>
+                        <button class="btn-icon btn-del" onclick="deleteEntry(${index})">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
                     </div>
                 </div>`;
         });
@@ -151,14 +153,8 @@ function renderInventory() {
                 </div>
             </div>`;
     });
-    updateInvStats();
 }
-function updateInvStats() {
-    const active = Object.values(inventoryState).filter(v => v > 0).length;
-    const total = Object.values(inventoryState).reduce((sum, v) => sum + v, 0);
-    document.getElementById('inv-active').textContent = active;
-    document.getElementById('inv-total').textContent = total;
-}
+
 function addItemToList() {
     const input = document.getElementById('newItemName'); const name = input.value.trim();
     if (name && !itemsList.includes(name)) { itemsList.push(name); localStorage.setItem('htb_items_list', JSON.stringify(itemsList)); renderInventory(); input.value = ''; showToast(`Agregado`); }
@@ -175,7 +171,7 @@ function resetInventory() {
 
 // === BACKUP ===
 function downloadBackup() {
-    const data = { payroll: payrollData, items: itemsList, stock: inventoryState, v: "13" };
+    const data = { payroll: payrollData, items: itemsList, stock: inventoryState, v: "14" };
     const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `HTB_Backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
@@ -218,8 +214,7 @@ function openSnapModal() {
                 content += `<tr><td>${item}</td><td style="text-align:right; ${qtyStyle}">${qtyText}</td></tr>`;
             });
             content += `</tbody></table>`;
-            const total = Object.values(inventoryState).reduce((a,b)=>a+b,0);
-            content += `<div class="snap-row-total">TOTAL UNIDADES: ${total}</div>`;
+            // CAMBIO V14: ELIMINADO TOTAL DE UNIDADES
         }
     } else {
         document.getElementById('snapTitle').innerText = "PENDIENTES";
