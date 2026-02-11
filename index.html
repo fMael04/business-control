@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HTB Control Final</title>
+    <!-- Librería externa -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Tu diseño separado -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- PÁGINA NÓMINA -->
+    <div id="page-nomina" class="page active">
+        <h2>_SYSTEM_PAYROLL</h2>
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-label">Pendiente</div><div class="stat-value red" id="stat-pending">Q0</div></div>
+            <div class="stat-card"><div class="stat-label">Pagado</div><div class="stat-value" id="stat-paid">Q0</div></div>
+        </div>
+
+        <div class="form-card">
+            <select id="workerName">
+                <option value="Sara">User: Sara</option>
+                <option value="Seca">User: Seca</option>
+                <option value="Ambas">>> AMBAS (Doble)</option>
+            </select>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="basePay" value="25" placeholder="Base">
+                <input type="number" id="discount" placeholder="Desc">
+            </div>
+            <input type="text" id="discReason" placeholder="Nota / Razón (Opcional)">
+            <input type="date" id="payDate" style="color-scheme: dark;">
+            <button class="btn-main" onclick="addEntry()">⚡ Execute_Add()</button>
+            <button class="btn-main btn-secondary" onclick="exportData()">📥 Export_Txt (Reporte)</button>
+        </div>
+
+        <div class="filter-container">
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="setFilter('all')">Todos</button>
+                <button class="filter-btn" onclick="setFilter('pending')">Pendientes</button>
+                <button class="filter-btn" onclick="setFilter('paid')">Pagados</button>
+            </div>
+            <button class="btn-snap-inline" onclick="openSnapModal()">📷</button>
+        </div>
+        
+        <div id="payrollList"></div>
+    </div>
+
+    <!-- PÁGINA INVENTARIO -->
+    <div id="page-inventario" class="page">
+        <div class="inv-header">
+            <h2 style="margin:0; font-size: 20px;">_INVENTORY</h2>
+            <button class="btn-reset" onclick="resetInventory()">RESET</button>
+        </div>
+        <div class="add-inv-row">
+            <input type="text" id="newItemName" placeholder="Nuevo producto..." style="margin-bottom:0;">
+            <button class="btn-main btn-add-mini" onclick="addItemToList()">+</button>
+        </div>
+        <div class="stats-grid" style="margin: 0 0 15px 0;">
+            <div class="stat-card"><div class="stat-label">Stock Total</div><div class="stat-value" id="inv-total">0</div></div>
+             <div class="stat-card"><div class="stat-label">Items Activos</div><div class="stat-value" id="inv-active">0</div></div>
+        </div>
+        <div style="display:flex; justify-content: flex-end; margin-bottom: 10px;">
+             <button class="btn-snap-inline" style="width:100%; height:40px; font-size:16px; border-color:#2d4063; color:#a4b1cd;" onclick="openSnapModal()">📷 Reporte Stock</button>
+        </div>
+        <div class="inv-list" id="inventoryList"></div>
+    </div>
+
+    <!-- PÁGINA SETTINGS -->
+    <div id="page-settings" class="page">
+        <h2>_SYSTEM_DATA</h2>
+        <div class="form-card" style="text-align:center;">
+            <p style="color:#9fef00; font-weight:bold; margin-bottom:10px;">BACKUP (Copia de Seguridad)</p>
+            <p style="color:#888; font-size:14px; margin-bottom:20px;">
+                Descarga el archivo .JSON para no perder tus datos.
+            </p>
+            <button class="btn-main" onclick="downloadBackup()">💾 Descargar JSON</button>
+            
+            <div style="margin-top:30px; border-top:1px dashed #2d4063; padding-top:20px;">
+                <p style="color:#ff4b4b; font-weight:bold; margin-bottom:10px;">RESTAURAR</p>
+                <input type="file" id="backupFile" accept=".json" style="margin-bottom:15px; color:#aaa;">
+                <button class="btn-main btn-secondary" onclick="restoreBackup()">📂 Cargar JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav">
+        <button onclick="showPage('nomina')" class="active" id="btn-nomina"><span>$</span>Pagos</button>
+        <button onclick="showPage('inventario')" id="btn-inventario"><span>#</span>Stock</button>
+        <button onclick="showPage('settings')" id="btn-settings"><span>⚙</span>Data</button>
+    </div>
+
+    <!-- MODAL SNAP -->
+    <div id="snapModal">
+        <div class="snap-container" id="captureTarget">
+            <div class="snap-title" id="snapTitle">REPORTE</div>
+            <div id="snapContent"></div>
+            <div class="snap-footer">GENERATED BY HTB CONTROL V13</div>
+        </div>
+        <div class="snap-actions">
+            <button class="btn-snap-close" onclick="closeSnap()">X</button>
+            <button class="btn-snap-dl" onclick="downloadSnap()">💾 Guardar</button>
+        </div>
+    </div>
+
+    <!-- Tu lógica separada -->
+    <script src="script.js"></script>
+</body>
+</html>
