@@ -3,9 +3,6 @@ import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.14.1/firebas
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-// =============================================================================
-// 1. TU CONFIGURACIÓN DE FIREBASE (YA INCLUIDA)
-// =============================================================================
 const firebaseConfig = {
     apiKey: "AIzaSyASqU3PApoYekng-H7a9p9_vyuKDxy-brI",
     authDomain: "business-control-e6199.firebaseapp.com",
@@ -16,538 +13,318 @@ const firebaseConfig = {
     measurementId: "G-TLC3GPJFM1"
 };
 
-// Inicializar Servicios
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-// =============================================================================
-// 2. ESTADO GLOBAL
-// =============================================================================
-let currentUser = null;
-let payrollData = [];
-// Inventario inicia vacío, tú lo llenas
-let itemsList = []; 
-let inventoryState = {};
-// Trabajadores inician vacíos, tú los agregas en Datos
-let workerList = []; 
-let currentFilter = 'all';
+let currentUser, payrollData = [], itemsList = [], inventoryState = {}, workerList = [], currentFilter = 'all';
 
-// =============================================================================
-// 3. AUTENTICACIÓN (LOGIN/LOGOUT)
-// =============================================================================
-const btnLogin = document.getElementById('btnLogin');
-const btnLogout = document.getElementById('btnLogout'); // Está en la pestaña Datos
-const loginScreen = document.getElementById('login-screen');
-const appContent = document.getElementById('app-content');
-const userName = document.getElementById('userName');
-const userPhoto = document.getElementById('userPhoto');
-
-if(btnLogin) {
-    btnLogin.addEventListener('click', () => {
-        signInWithPopup(auth, provider).catch((error) => {
-            console.error("Error Auth:", error);
-            showToast("Error de acceso: " + error.code, true);
-        });
-    });
-}
-
-if(btnLogout) {
-    btnLogout.addEventListener('click', () => {
-        if(confirm("¿Cerrar sesión en este dispositivo?")) signOut(auth);
-    });
-}
-
-onAuthStateChanged(auth, (user) => {
+// === GESTIÓN DE SESIÓN ===
+onAuthStateChanged(auth, user => {
     if (user) {
-        // Usuario Logueado
         currentUser = user;
-        loginScreen.style.display = 'none';
-        appContent.style.display = 'block';
-        
-        // Actualizar UI del perfil
-        if(userName) userName.textContent = user.displayName.split(' ')[0].toUpperCase();
-        if(userPhoto) userPhoto.src = user.photoURL;
-        
-        // Iniciar sincronización
-        initDataListener();
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app-content').style.display = 'block';
+        document.getElementById('userName').textContent = user.displayName.split(' ')[0].toUpperCase();
+        document.getElementById('userPhoto').src = user.photoURL;
+        initCloudSync();
     } else {
-        // Usuario No Logueado
-        currentUser = null;
-        loginScreen.style.display = 'flex';
-        appContent.style.display = 'none';
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('app-content').style.display = 'none';
     }
 });
 
-// =============================================================================
-// 4. SINCRONIZACIÓN EN TIEMPO REAL (FIRESTORE)
-// =============================================================================
-function initDataListener() {
-    const userDocRef = doc(db, "users", currentUser.uid);
-    
-    // Escuchar cambios
-    onSnapshot(userDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            payrollData = data.payroll || [];
-            itemsList = data.itemsList || [];
-            inventoryState = data.inventoryState || {};
-            workerList = data.workerList || [];
-            
-            // Actualizar interfaz
-            updateWorkerSelect(); 
-            renderWorkerSettingsList(); 
-            renderPayroll();
-            renderInventory();
+function initCloudSync() {
+    onSnapshot(doc(db, "users", currentUser.uid), snap => {
+        if (snap.exists()) {
+            const d = snap.data();
+            payrollData = d.payroll || [];
+            itemsList = d.itemsList || [];
+            inventoryState = d.inventoryState || {};
+            workerList = d.workerList || [];
+            updateUI();
         } else {
-            // Usuario nuevo: crear estructura vacía
-            setDoc(userDocRef, { payroll: [], itemsList: [], inventoryState: {}, workerList: [] });
+            // CAMBIO V17: Inicializar todo vacío, sin items por defecto
+            setDoc(doc(db, "users", currentUser.uid), { payroll: [], itemsList: [], inventoryState: {}, workerList: [] });
         }
-    }, (error) => {
-        console.error("Error Firestore:", error);
-        // Si sale error de permisos, es probable que sea por reglas de seguridad o dominio no autorizado
     });
 }
 
-function saveDataToCloud() {
-    if (!currentUser) return;
-    const userDocRef = doc(db, "users", currentUser.uid);
-    updateDoc(userDocRef, {
-        payroll: payrollData,
-        itemsList: itemsList,
-        inventoryState: inventoryState,
-        workerList: workerList
-    }).catch(err => console.error("Save error:", err));
+function updateUI() {
+    renderPayroll();
+    renderInventory();
+    renderWorkerSettings();
+    updateWorkerSelect();
 }
 
-// =============================================================================
-// 5. GESTIÓN DE PERSONAL (Pestaña Datos)
-// =============================================================================
+function save() {
+    updateDoc(doc(db, "users", currentUser.uid), { payroll: payrollData, itemsList, inventoryState, workerList });
+}
+
+// === PERSONAL ===
 function updateWorkerSelect() {
-    const select = document.getElementById('workerName');
-    if(!select) return;
-    
-    // Limpiar y poner default
-    select.innerHTML = '<option value="" disabled selected>Selecciona personal...</option>';
-    
-    // Solo si hay trabajadores, mostramos "Ambas"
-    if (workerList.length >= 2) {
-        const optAmbas = document.createElement('option');
-        optAmbas.value = "Ambas";
-        optAmbas.textContent = "👥 Ambas (Registro Doble)";
-        select.appendChild(optAmbas);
-    }
-
-    workerList.forEach(name => {
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = `👤 ${name}`;
-        select.appendChild(opt);
-    });
+    const s = document.getElementById('workerName');
+    s.innerHTML = '<option value="" disabled selected>Seleccionar empleado...</option>';
+    if (workerList.length >= 2) s.innerHTML += '<option value="Ambas">👥 Ambas (Doble)</option>';
+    workerList.forEach(w => s.innerHTML += `<option value="${w}">👤 ${w}</option>`);
 }
 
-function renderWorkerSettingsList() {
-    const container = document.getElementById('workerListSettings');
-    if(!container) return;
-    container.innerHTML = '';
-    
-    if (workerList.length === 0) {
-        container.innerHTML = '<div style="text-align:center; padding:10px; opacity:0.5; font-size:12px;">No hay empleados registrados.</div>';
-        return;
-    }
-
-    workerList.forEach((name, index) => {
-        container.innerHTML += `
-            <div class="inv-item">
-                <div class="inv-left">
-                    <button class="btn-del-item" onclick="window.deleteWorker(${index})">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                    <span class="inv-name">${name}</span>
-                </div>
-            </div>`;
-    });
-}
-
-// Agregar Empleado (Botón en Settings)
-const btnAddWorker = document.getElementById('btnAddWorker');
-if(btnAddWorker) {
-    btnAddWorker.addEventListener('click', () => {
-        const input = document.getElementById('newWorkerName');
-        const name = input.value.trim();
-        if(name && !workerList.includes(name)) {
-            workerList.push(name);
-            saveDataToCloud();
-            input.value = '';
-            showToast('Personal agregado');
-        } else if (workerList.includes(name)) {
-            showToast('Ya existe ese nombre', true);
-        }
-    });
-}
-
-window.deleteWorker = (index) => {
-    if(confirm('¿Eliminar empleado? (No borra sus pagos antiguos)')) {
-        workerList.splice(index, 1);
-        saveDataToCloud();
-    }
+document.getElementById('btnAddWorker').onclick = () => {
+    const i = document.getElementById('newWorkerName'), n = i.value.trim();
+    if (n && !workerList.includes(n)) { workerList.push(n); i.value = ''; save(); }
 };
 
-// =============================================================================
-// 6. NÓMINA (Pagos)
-// =============================================================================
-document.getElementById('btnAddEntry').addEventListener('click', addEntry);
+window.deleteWorker = idx => { if(confirm('¿Eliminar de la lista?')) { workerList.splice(idx, 1); save(); } };
+
+function renderWorkerSettings() {
+    const c = document.getElementById('workerListSettings');
+    c.innerHTML = workerList.map((w, i) => `
+        <div class="inv-item" style="padding:10px; margin-bottom:5px; border-radius:8px;">
+            <div class="inv-left"><button class="btn-del-item" onclick="deleteWorker(${i})">×</button><span>${w}</span></div>
+        </div>`).join('');
+}
+
+// === PAGOS ===
+document.getElementById('btnAddEntry').onclick = () => {
+    const name = document.getElementById('workerName').value;
+    const base = parseFloat(document.getElementById('basePay').value);
+    const disc = parseFloat(document.getElementById('discount').value) || 0;
+    const reason = document.getElementById('discReason').value;
+    const date = document.getElementById('payDate').value ? new Date(document.getElementById('payDate').value + 'T12:00:00').toISOString() : new Date().toISOString();
+    
+    if (!name || !base) return alert('Faltan datos');
+    
+    if (name === "Ambas") {
+        if(workerList.length >= 2) {
+            payrollData.push({ name: workerList[0], date, base, discount: 0, reason: "", paid: false });
+            payrollData.push({ name: workerList[1], date, base, discount: 0, reason: "", paid: false });
+        }
+    } else {
+        payrollData.push({ name, date, base, discount: disc, reason, paid: false });
+    }
+    save();
+    // Limpiar campos opcionales
+    document.getElementById('discount').value = '';
+    document.getElementById('discReason').value = '';
+};
+
+window.togglePay = i => { payrollData[i].paid = !payrollData[i].paid; save(); };
+window.deletePay = i => { if(confirm('¿Borrar registro?')) { payrollData.splice(i, 1); save(); } };
 
 function renderPayroll() {
     const list = document.getElementById('payrollList');
-    if(!list) return;
     list.innerHTML = '';
     
-    // Filtrar
-    let filtered = payrollData.map((item, index) => ({ item, originalIndex: index }));
+    let filtered = payrollData.map((item, index) => ({ item, index }));
     if (currentFilter === 'pending') filtered = filtered.filter(x => !x.item.paid);
     else if (currentFilter === 'paid') filtered = filtered.filter(x => x.item.paid);
-
-    // Ordenar (Fecha descendente)
-    filtered.sort((a, b) => new Date(b.item.date) - new Date(a.item.date));
-
-    if (filtered.length === 0) { 
-        list.innerHTML = '<div class="empty-state">No hay registros</div>'; 
-        updateStats(); 
-        return; 
-    }
-
-    // Agrupar por Mes
+    
+    filtered.sort((a,b) => new Date(b.item.date) - new Date(a.item.date));
+    
     const grouped = {};
-    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-
     filtered.forEach(obj => {
-        const d = new Date(obj.item.date);
-        const key = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+        const d = new Date(obj.item.date), key = `${d.toLocaleString('es', {month:'long'})} ${d.getFullYear()}`;
         if(!grouped[key]) grouped[key] = [];
         grouped[key].push(obj);
     });
 
-    // Renderizar Grupos
-    for (const [monthKey, items] of Object.entries(grouped)) {
-        const details = document.createElement('details');
-        details.open = true;
-        // Total del mes (lo que realmente salió de caja)
-        // Ojo: Si es deuda (negativo), no suma a "salida de caja" visualmente, pero matemáticamente sí resta.
-        // Para simplificar, sumamos el neto.
-        const monthTotal = items.reduce((acc, curr) => acc + (curr.item.base - curr.item.discount), 0);
-        
-        details.innerHTML = `<summary>${monthKey} <span style="font-weight:normal; opacity:0.7;">(Q${monthTotal})</span></summary>`;
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'month-content';
-
-        items.forEach((wrapper) => {
-            const item = wrapper.item;
-            const index = wrapper.originalIndex;
-            const total = item.base - item.discount;
-            const dateObj = new Date(item.date);
-            const dateStr = `${dateObj.getDate()}/${dateObj.getMonth()+1}`;
-            const reasonText = item.reason ? item.reason : '';
+    for (const [month, items] of Object.entries(grouped)) {
+        const total = items.reduce((acc, curr) => acc + (curr.item.base - curr.item.discount), 0);
+        const det = document.createElement('details'); det.open = true;
+        det.innerHTML = `<summary>${month.toUpperCase()} (Q${total})</summary>`;
+        const cont = document.createElement('div'); cont.className = 'month-content';
+        items.forEach(obj => {
+            const it = obj.item, diff = it.base - it.discount;
+            const dObj = new Date(it.date);
+            const dStr = `${dObj.getDate()}/${dObj.getMonth()+1}`;
             
-            // Texto descriptivo pequeño
-            const smallText = `${dateStr} • F./Adel: Q${item.discount} <span class="reason-tag">(${reasonText})</span>`;
-
-            // Lógica Visual de Dinero
-            let displayMoney = `Q${total}`;
+            // Lógica visual de dinero
+            let moneyTxt = `Q${diff}`;
             let moneyClass = '';
-            
-            if (total < 0) {
-                // Si es negativo (Deuda/Adelanto)
-                displayMoney = `-Q${Math.abs(total)}`;
-                moneyClass = 'negative'; // Se pone rojo por CSS
-            } else if (total === 0) {
-                displayMoney = `SALDADO`;
-                moneyClass = 'zero'; // Se pone gris
-            }
+            if(diff < 0) { moneyTxt = `-Q${Math.abs(diff)}`; moneyClass = 'negative'; }
+            else if(diff === 0) { moneyTxt = 'SALDADO'; moneyClass = 'zero'; }
 
-            contentDiv.innerHTML += `
-                <div class="card ${item.paid ? 'pagado' : ''}">
+            cont.innerHTML += `
+                <div class="card ${it.paid ? 'pagado' : ''}">
                     <div class="card-info">
-                        <h3>${item.name}</h3>
-                        <p>${smallText}</p>
+                        <h3>${it.name}</h3>
+                        <p>${dStr} • F./Adel: Q${it.discount} <span class="reason-tag">${it.reason ? '('+it.reason+')' : ''}</span></p>
                     </div>
-                    <div class="money-block">
-                        <div class="money-display ${moneyClass}">${displayMoney}</div>
-                    </div>
+                    <div class="money-block"><div class="money-display ${moneyClass}">${moneyTxt}</div></div>
                     <div class="card-actions">
-                        <button class="btn-icon btn-pay ${item.paid ? 'pagado' : ''}" onclick="window.togglePay(${index})">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        </button>
-                        <button class="btn-icon btn-del" onclick="window.deleteEntry(${index})">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        </button>
+                        <button class="btn-icon btn-pay ${it.paid?'pagado':''}" onclick="togglePay(${obj.index})">✓</button>
+                        <button class="btn-icon btn-del" onclick="deletePay(${obj.index})">🗑</button>
                     </div>
                 </div>`;
         });
-        details.appendChild(contentDiv);
-        list.appendChild(details);
-    }
-    updateStats();
-}
-
-function updateStats() {
-    const pending = payrollData.filter(p => !p.paid).reduce((sum, p) => sum + (p.base - p.discount), 0);
-    const paid = payrollData.filter(p => p.paid).reduce((sum, p) => sum + (p.base - p.discount), 0);
-    document.getElementById('stat-pending').textContent = 'Q' + pending.toFixed(0);
-    document.getElementById('stat-paid').textContent = 'Q' + paid.toFixed(0);
-}
-
-function addEntry() {
-    const nameInput = document.getElementById('workerName');
-    const baseInput = document.getElementById('basePay');
-    const discInput = document.getElementById('discount');
-    const reasonInput = document.getElementById('discReason');
-    const dateInput = document.getElementById('payDate');
-
-    const name = nameInput.value;
-    const base = parseFloat(baseInput.value);
-    const disc = parseFloat(discInput.value) || 0;
-    const reason = reasonInput.value;
-    const date = dateInput.value ? new Date(dateInput.value + 'T12:00:00').toISOString() : new Date().toISOString();
-
-    if (!name || name === "") { showToast('⚠️ Selecciona personal', true); return; }
-    if (!base && base !== 0) { showToast('⚠️ Ingresa Sueldo Base', true); return; }
-
-    if (name === "Ambas") {
-        // Lógica para "Ambas": Busca los dos primeros trabajadores de la lista
-        if (workerList.length < 2) {
-            showToast('⚠️ Necesitas al menos 2 empleados en Datos', true);
-            return;
-        }
-        payrollData.push({ name: workerList[0], date, base, discount: 0, reason: "", paid: false });
-        payrollData.push({ name: workerList[1], date, base, discount: 0, reason: "", paid: false });
-        showToast('✓ Registro Doble Creado');
-    } else {
-        payrollData.push({ name, date, base, discount: disc, reason: reason, paid: false });
-        showToast('✓ Registrado');
+        det.appendChild(cont); list.appendChild(det);
     }
     
-    saveDataToCloud();
-    // Reset inputs parcial
-    discInput.value = '';
-    reasonInput.value = '';
+    // Stats Update
+    const pendingSum = payrollData.filter(p => !p.paid).reduce((s, p) => s + (p.base - p.discount), 0);
+    const paidSum = payrollData.filter(p => p.paid).reduce((s, p) => s + (p.base - p.discount), 0);
+    document.getElementById('stat-pending').textContent = 'Q' + pendingSum;
+    document.getElementById('stat-paid').textContent = 'Q' + paidSum;
 }
 
-// Funciones globales (window)
-window.togglePay = (i) => { payrollData[i].paid = !payrollData[i].paid; saveDataToCloud(); };
-window.deleteEntry = (i) => { if(confirm('¿Borrar registro?')) { payrollData.splice(i, 1); saveDataToCloud(); showToast('Eliminado', true); } };
+// === INVENTARIO ===
+document.getElementById('btnAddItem').onclick = () => {
+    const i = document.getElementById('newItemName'), n = i.value.trim();
+    if (n && !itemsList.includes(n)) { itemsList.push(n); i.value = ''; save(); }
+};
 
-// Filtros
-document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
-        currentFilter = e.target.dataset.filter;
-        renderPayroll();
-    });
-});
+window.updStock = (item, val) => { inventoryState[item] = Math.max(0, (inventoryState[item] || 0) + val); save(); };
+window.delItem = idx => { if(confirm('¿Borrar producto?')) { delete inventoryState[itemsList[idx]]; itemsList.splice(idx,1); save(); }};
+document.getElementById('btnResetInv').onclick = () => { if(confirm('¿Stock a CERO?')) { inventoryState = {}; save(); }};
 
-// Exportar TXT (Movido a Datos)
+function renderInventory() {
+    const list = document.getElementById('inventoryList');
+    if(itemsList.length === 0) {
+        list.innerHTML = '<div class="empty-state">Inventario vacío. Agrega productos.</div>';
+    } else {
+        list.innerHTML = itemsList.map((it, i) => `
+            <div class="inv-item" style="border-radius:8px; margin-bottom:5px;">
+                <div class="inv-left"><button class="btn-del-item" onclick="delItem(${i})">×</button><span>${it}</span></div>
+                <div class="stepper">
+                    <button class="stepper-btn" onclick="updStock('${it}',-1)">-</button>
+                    <div class="stepper-val">${inventoryState[it]||0}</div>
+                    <button class="stepper-btn" onclick="updStock('${it}',1)">+</button>
+                </div>
+            </div>`).join('');
+    }
+    document.getElementById('inv-active').textContent = itemsList.length;
+    document.getElementById('inv-total').textContent = Object.values(inventoryState).reduce((a,b)=>a+b,0);
+}
+
+// === SNAPSHOTS & EXPORT ===
 window.exportData = () => {
-    let txt = '=== REPORTE DE CONTROL ===\n';
+    let txt = '=== REPORTE HTB ===\n';
     payrollData.forEach(p => {
         const estado = p.paid ? '[PAGADO]' : '[PENDIENTE]';
         txt += `${p.name} | Q${p.base - p.discount} | ${estado} | ${p.reason}\n`;
     });
-    const a = document.createElement('a'); 
-    a.href = URL.createObjectURL(new Blob([txt], {type:'text/plain'})); 
-    a.download = `Reporte_${new Date().toISOString().slice(0,10)}.txt`; 
-    a.click();
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], {type:'text/plain'})); a.download = 'Reporte.txt'; a.click();
 };
 
-// =============================================================================
-// 7. INVENTARIO
-// =============================================================================
-document.getElementById('btnAddItem').addEventListener('click', addItemToList);
-document.getElementById('btnResetInv').addEventListener('click', resetInventory);
-
-function renderInventory() {
-    const list = document.getElementById('inventoryList');
-    if(!list) return;
-    list.innerHTML = '';
-    
-    if(itemsList.length === 0) { list.innerHTML = '<div class="empty-state">Inventario vacío</div>'; return; }
-
-    itemsList.forEach((item, index) => {
-        const qty = inventoryState[item] || 0;
-        list.innerHTML += `
-            <div class="inv-item">
-                <div class="inv-left">
-                    <button class="btn-del-item" onclick="window.deleteItemFromList(${index})">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                    <span class="inv-name">${item}</span>
-                </div>
-                <div class="stepper">
-                    <button class="stepper-btn" onclick="window.updStock('${item}', -1)">−</button>
-                    <div class="stepper-val">${qty}</div>
-                    <button class="stepper-btn" onclick="window.updStock('${item}', 1)">+</button>
-                </div>
-            </div>`;
-    });
-    updateInvStats();
-}
-
-function updateInvStats() {
-    const active = Object.values(inventoryState).filter(v => v > 0).length;
-    const total = Object.values(inventoryState).reduce((sum, v) => sum + v, 0);
-    const elActive = document.getElementById('inv-active');
-    const elTotal = document.getElementById('inv-total');
-    if(elActive) elActive.textContent = active;
-    if(elTotal) elTotal.textContent = total;
-}
-
-function addItemToList() {
-    const input = document.getElementById('newItemName'); const name = input.value.trim();
-    if (name && !itemsList.includes(name)) { 
-        itemsList.push(name); saveDataToCloud(); input.value = ''; showToast(`Agregado`); 
-    } else if (itemsList.includes(name)) { showToast('Ya existe', true); }
-}
-
-window.deleteItemFromList = (index) => {
-    if(confirm(`¿Eliminar producto?`)) { 
-        const item = itemsList[index]; itemsList.splice(index, 1); delete inventoryState[item]; 
-        saveDataToCloud(); 
-    }
-};
-
-window.updStock = (item, change) => {
-    let n = (inventoryState[item] || 0) + change; if(n < 0) n = 0; inventoryState[item] = n; saveDataToCloud();
-};
-
-function resetInventory() {
-    if (confirm('¿Poner todo el stock a CERO?')) { inventoryState = {}; saveDataToCloud(); showToast('Reiniciado'); }
-}
-
-// =============================================================================
-// 8. BACKUP MANUAL (Json)
-// =============================================================================
 window.downloadBackup = () => {
-    const data = { payroll: payrollData, items: itemsList, stock: inventoryState, workers: workerList, v: "16" };
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type: "application/json"})); a.download = `Backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
+    const d = { payroll: payrollData, items: itemsList, stock: inventoryState, workers: workerList };
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(d)], {type:"application/json"})); a.download = 'Backup.json'; a.click();
 };
 
 window.restoreBackup = () => {
-    const file = document.getElementById('backupFile').files[0];
-    if (!file) { showToast('Selecciona un archivo', true); return; }
-    const reader = new FileReader();
-    reader.onload = function(e) {
+    const f = document.getElementById('backupFile').files[0];
+    if(!f) return alert('Selecciona archivo');
+    const r = new FileReader();
+    r.onload = e => {
         try {
-            const data = JSON.parse(e.target.result);
-            if(confirm('⚠️ Esto reemplazará los datos en la NUBE. ¿Seguro?')) {
-                if(data.payroll) payrollData = data.payroll;
-                if(data.items) itemsList = data.items;
-                if(data.stock) inventoryState = data.stock;
-                if(data.workers) workerList = data.workers;
-                saveDataToCloud();
-                alert("Restauración completada.");
-                location.reload();
+            const d = JSON.parse(e.target.result);
+            if(confirm('¿Sobrescribir nube con este backup?')) {
+                if(d.payroll) payrollData = d.payroll;
+                if(d.items) itemsList = d.items;
+                if(d.stock) inventoryState = d.stock;
+                if(d.workers) workerList = d.workers;
+                save();
+                alert('Restaurado');
             }
-        } catch(err) { showToast('Archivo inválido', true); }
+        } catch(err) { alert('Archivo inválido'); }
     };
-    reader.readAsText(file);
+    r.readAsText(f);
 };
 
-// =============================================================================
-// 9. SNAPSHOT (FOTO DE REPORTE)
-// =============================================================================
-const btnSnapP = document.getElementById('btnSnapPayroll');
-const btnSnapI = document.getElementById('btnSnapInv');
-if(btnSnapP) btnSnapP.addEventListener('click', openSnapModal);
-if(btnSnapI) btnSnapI.addEventListener('click', openSnapModal);
-document.getElementById('btnCloseSnap').addEventListener('click', closeSnap);
-document.getElementById('btnDownloadSnap').addEventListener('click', downloadSnap);
+// === LÓGICA DE FOTO (SNAP) ===
+document.getElementById('btnSnapPayroll').onclick = () => openSnap(false);
+document.getElementById('btnSnapInv').onclick = () => openSnap(true);
+document.getElementById('btnCloseSnap').onclick = () => document.getElementById('snapModal').style.display = 'none';
+document.getElementById('btnDownloadSnap').onclick = () => {
+    html2canvas(document.getElementById('captureTarget'), {backgroundColor:'#141d2b'}).then(c => {
+        const a = document.createElement('a'); a.download = 'Reporte.png'; a.href = c.toDataURL(); a.click();
+    });
+};
 
-function openSnapModal() {
-    const isInventory = document.getElementById('page-inventario').classList.contains('active');
-    let content = '';
-
-    if (isInventory) {
-        document.getElementById('snapTitle').innerText = "INVENTARIO";
-        if (itemsList.length === 0) content = '<div style="text-align:center">Vacío</div>';
+function openSnap(isInv) {
+    const title = isInv ? "INVENTARIO" : "PENDIENTES";
+    let html = '<table class="snap-table"><thead>';
+    
+    if(isInv) {
+        html += '<tr><th>PRODUCTO</th><th style="text-align:right">CANT</th></tr></thead><tbody>';
+        if(itemsList.length === 0) html += '<tr><td colspan="2" style="text-align:center; py-4">Vacío</td></tr>';
         else {
-            content += `<table class="snap-table"><thead><tr><th>PRODUCTO</th><th style="text-align:right">CANT</th></tr></thead><tbody>`;
-            itemsList.forEach(item => {
-                const qty = inventoryState[item] || 0;
-                const qtyStyle = qty === 0 ? 'color:#ff4b4b;' : '';
-                const qtyText = qty === 0 ? 'AGOTADO' : qty;
-                content += `<tr><td>${item}</td><td style="text-align:right; ${qtyStyle}">${qtyText}</td></tr>`;
+            itemsList.forEach(it => {
+                const q = inventoryState[it]||0;
+                html += `<tr><td>${it}</td><td style="text-align:right; color:${q===0?'#ff4b4b':'white'}">${q===0?'AGOTADO':q}</td></tr>`;
             });
-            content += `</tbody></table>`;
         }
+        html += '</tbody></table>';
     } else {
-        document.getElementById('snapTitle').innerText = "PENDIENTES";
-        const pendientes = payrollData.filter(p => !p.paid);
-        let totalDeuda = 0;
-
-        if (pendientes.length === 0) {
-            content = `<div style="text-align:center; color:#888; margin-top:20px;">Todo al día.</div>`;
+        // CAMBIO V17: AGRUPAR PENDIENTES POR PERSONA
+        html += '<tr><th style="width:20%">FECHA</th><th style="width:50%">NOTA</th><th style="width:30%; text-align:right;">MONTO</th></tr></thead><tbody>';
+        
+        const pending = payrollData.filter(p => !p.paid).sort((a,b) => a.name.localeCompare(b.name));
+        
+        if(pending.length === 0) {
+            html += '<tr><td colspan="3" style="text-align:center; padding:20px; color:#888;">Todo al día ✅</td></tr>';
         } else {
-            pendientes.sort((a,b) => a.name.localeCompare(b.name) || new Date(a.date) - new Date(b.date));
-            content += `<table class="snap-table"><thead><tr><th style="width:20%">FECHA</th><th style="width:50%">CONCEPTO</th><th style="width:30%; text-align:right;">SALDO</th></tr></thead><tbody>`;
-            
-            let lastUser = "";
-            pendientes.forEach(p => {
-                const d = new Date(p.date);
-                const fecha = `${d.getDate()}/${d.getMonth()+1}`;
-                const monto = p.base - p.discount;
-                let concepto = p.reason ? p.reason : "Salario Base";
-                let displayMonto = `Q${monto}`;
-                let tdClass = 'amount'; 
-                
-                if (monto < 0) { 
-                    displayMonto = `-Q${Math.abs(monto)}`; 
-                    tdClass = 'debt'; // Rojo
-                }
-
-                if (p.name !== lastUser) {
-                        content += `<tr><td colspan="3" style="padding-top:10px; color:#9fef00; font-weight:bold; border-bottom:none;">// ${p.name.toUpperCase()}</td></tr>`;
-                        lastUser = p.name;
-                }
-                content += `<tr><td>${fecha}</td><td>${concepto}</td><td class="${tdClass}">${displayMonto}</td></tr>`;
-                totalDeuda += monto;
+            // Agrupar manualmente
+            const groups = {};
+            pending.forEach(p => {
+                if(!groups[p.name]) groups[p.name] = [];
+                groups[p.name].push(p);
             });
-            content += `</tbody></table>`;
-            content += `<div class="snap-row-total">TOTAL GLOBAL: Q${totalDeuda}</div>`;
+
+            let grandTotal = 0;
+
+            for (const [name, records] of Object.entries(groups)) {
+                let subTotal = 0;
+                // Header Nombre
+                html += `<tr><td colspan="3" style="padding-top:15px; border-bottom:none; color:#9fef00; font-weight:bold; font-size:14px;">// ${name.toUpperCase()}</td></tr>`;
+                
+                records.forEach(p => {
+                    const d = new Date(p.date);
+                    const diff = p.base - p.discount;
+                    subTotal += diff;
+                    
+                    let moneyTxt = `Q${diff}`;
+                    let moneyClass = 'amount';
+                    if(diff < 0) { moneyTxt = `-Q${Math.abs(diff)}`; moneyClass = 'debt'; }
+
+                    html += `<tr>
+                        <td>${d.getDate()}/${d.getMonth()+1}</td>
+                        <td style="opacity:0.8;">${p.reason || 'Sueldo Base'}</td>
+                        <td class="${moneyClass}">${moneyTxt}</td>
+                    </tr>`;
+                });
+                
+                // Subtotal
+                html += `<tr><td colspan="2" style="text-align:right; font-size:11px; color:#3992d4; border-top:1px dashed #333;">TOTAL ${name.toUpperCase()}:</td><td style="text-align:right; font-weight:bold; border-top:1px dashed #333;">Q${subTotal}</td></tr>`;
+                
+                grandTotal += subTotal;
+            }
+            
+            html += `</tbody></table>`;
+            html += `<div class="snap-row-total">TOTAL GLOBAL: Q${grandTotal}</div>`;
         }
     }
-    document.getElementById('snapContent').innerHTML = content;
+    
+    document.getElementById('snapTitle').textContent = title;
+    document.getElementById('snapContent').innerHTML = html;
     document.getElementById('snapModal').style.display = 'flex';
 }
 
-function closeSnap() { document.getElementById('snapModal').style.display = 'none'; }
-function downloadSnap() {
-    const element = document.getElementById('captureTarget');
-    html2canvas(element, { backgroundColor: null, scale: 2 }).then(canvas => {
-        const link = document.createElement('a');
-        link.download = `Reporte_${new Date().getTime()}.png`;
-        link.href = canvas.toDataURL();
-        link.click();
-    });
-}
-
-// === HELPERS UI ===
-function showToast(msg, isError = false) {
-    const toast = document.createElement('div');
-    toast.className = 'toast' + (isError ? ' error' : '');
-    toast.innerHTML = `<div class="toast-text">${msg}</div>`;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-}
-
-window.changePage = (page) => {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+// NAV
+window.changePage = p => {
+    document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
     document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
-    document.getElementById('page-' + page).classList.add('active');
-    document.getElementById('btn-' + page).classList.add('active');
+    document.getElementById('page-'+p).classList.add('active');
+    document.getElementById('btn-'+p).classList.add('active');
 };
 
-const dateInput = document.getElementById('payDate');
-if(dateInput) dateInput.valueAsDate = new Date();
+document.getElementById('btnLogin').onclick = () => signInWithPopup(auth, provider);
+document.getElementById('btnLogout').onclick = () => signOut(auth);
+document.querySelectorAll('.filter-btn').forEach(b => b.onclick = e => {
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    e.target.classList.add('active'); currentFilter = e.target.dataset.filter; renderPayroll();
+});
+
+const di = document.getElementById('payDate'); if(di) di.valueAsDate = new Date();
