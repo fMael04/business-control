@@ -3,75 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Control de Negocio</title>
+    <title>HTB Control v16</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+    <!-- LOGIN -->
     <div id="login-screen" class="login-container">
         <div class="login-box">
-            <h2 style="font-size: 24px; margin-bottom: 5px;">CONTROL NEGOCIO</h2>
-            <p style="font-size: 14px; opacity: 0.7; margin-bottom: 25px; line-height: 1.5;">
-                Inicia sesión para mantener tu inventario y cuentas sincronizados y seguros en la nube.
+            <h2 style="font-size: 24px; margin-bottom: 5px;">CONTROL DE NEGOCIO</h2>
+            <p style="font-size: 13px; opacity: 0.7; margin-bottom: 25px; line-height: 1.5;">
+                Inicia sesión para sincronizar tus datos en la nube.
             </p>
-            <button id="btnLogin" class="btn-main btn-google" style="font-weight: 500;">
+            <button id="btnLogin" class="btn-main btn-google">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="margin-right:12px"><path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/></svg>
-                Continuar con Google
+                Entrar con Google
             </button>
-            <p style="font-size: 11px; opacity: 0.3; margin-top: 20px;">Versión 1.0 &bull; Privado</p>
         </div>
     </div>
 
+    <!-- APP -->
     <div id="app-content" style="display:none;">
         
+        <!-- HEADER (Más limpio, sin botón de salir) -->
         <div class="app-header">
             <div class="user-profile">
                 <img id="userPhoto" src="" alt="Perfil">
                 <div style="display:flex; flex-direction:column; justify-content:center;">
-                    <span style="font-size:10px; color:#888; line-height:1;">HOLA,</span>
+                    <span style="font-size:10px; color:#a4b1cd; line-height:1;">ADMINISTRADOR</span>
                     <span id="userName" style="font-weight:bold; font-size:14px; color:#fff;">Usuario</span>
                 </div>
             </div>
-            <button id="btnLogout" class="btn-icon-small" title="Cerrar Sesión">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4b4b" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            </button>
+            <!-- Logo HTB sutil a la derecha -->
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9fef00" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
         </div>
 
+        <!-- PÁGINA PAGOS -->
         <div id="page-nomina" class="page active">
-            <h2 class="section-title">CONTROL DE PAGOS</h2>
-            
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-label">Saldo Pendiente</div>
+                    <div class="stat-label">Pendiente</div>
                     <div class="stat-value red" id="stat-pending">Q0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Total Pagado</div>
+                    <div class="stat-label">Pagado</div>
                     <div class="stat-value" id="stat-paid">Q0</div>
                 </div>
             </div>
 
             <div class="form-card">
-                <p style="font-size:12px; color:#888; margin-bottom:10px;">NUEVO REGISTRO</p>
+                <p class="input-label">NUEVO MOVIMIENTO</p>
                 <select id="workerName">
-                    <option value="Sara">👤 Sara</option>
-                    <option value="Seca">👤 Seca</option>
-                    <option value="Ambas">👥 Ambas (Registro Doble)</option>
+                    <!-- Se llena dinámicamente con JS -->
+                    <option value="" disabled selected>Selecciona personal...</option>
                 </select>
+                
                 <div style="display: flex; gap: 10px;">
-                    <input type="number" id="basePay" value="25" placeholder="Sueldo Base">
-                    <input type="number" id="discount" placeholder="Descuento / Fiado">
+                    <!-- Input con prefijo Q -->
+                    <div class="input-wrapper" style="flex:1;">
+                        <span class="prefix">Q</span>
+                        <input type="number" id="basePay" placeholder="Sueldo">
+                    </div>
+                    <div class="input-wrapper" style="flex:1;">
+                        <span class="prefix">Q</span>
+                        <input type="number" id="discount" placeholder="Desc/Fiado">
+                    </div>
                 </div>
-                <input type="text" id="discReason" placeholder="Nota o Razón (Opcional)">
+                
+                <input type="text" id="discReason" placeholder="Nota (Opcional)">
                 <input type="date" id="payDate" style="color-scheme: dark;">
                 
                 <button id="btnAddEntry" class="btn-main">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:8px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    Registrar Movimiento
-                </button>
-                <button class="btn-main btn-secondary" onclick="exportData()">
-                    📥 Exportar Historial (TXT)
+                    Registrar
                 </button>
             </div>
 
@@ -89,16 +94,17 @@
             <div id="payrollList"></div>
         </div>
 
+        <!-- PÁGINA STOCK -->
         <div id="page-inventario" class="page">
             <div class="inv-header">
-                <h2 class="section-title" style="margin:0;">INVENTARIO</h2>
+                <h2 class="section-title" style="margin:0; text-align:left;">STOCK</h2>
                 <button class="btn-reset" id="btnResetInv">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M2.5 2v6h6M21.5 22v-6h-6"/><path d="M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"/></svg> Reiniciar
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M2.5 2v6h6M21.5 22v-6h-6"/><path d="M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"/></svg> CERO
                 </button>
             </div>
             
             <div class="add-inv-row">
-                <input type="text" id="newItemName" placeholder="Agregar nuevo producto..." style="margin-bottom:0;">
+                <input type="text" id="newItemName" placeholder="Agregar producto..." style="margin-bottom:0;">
                 <button class="btn-main btn-add-mini" id="btnAddItem">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 </button>
@@ -106,64 +112,77 @@
 
             <div class="stats-grid" style="margin: 0 0 15px 0;">
                 <div class="stat-card"><div class="stat-label">Total Unidades</div><div class="stat-value" id="inv-total">0</div></div>
-                <div class="stat-card"><div class="stat-label">Productos Activos</div><div class="stat-value" id="inv-active">0</div></div>
+                <div class="stat-card"><div class="stat-label">Productos</div><div class="stat-value" id="inv-active">0</div></div>
             </div>
             
             <div style="display:flex; justify-content: flex-end; margin-bottom: 10px;">
                 <button class="btn-snap-inline" id="btnSnapInv" style="width:100%; height:40px; font-size:14px; border-color:#2d4063; color:#a4b1cd; gap:8px;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                    Crear Reporte Visual
+                    Reporte Visual
                 </button>
             </div>
             <div class="inv-list" id="inventoryList"></div>
         </div>
 
+        <!-- PÁGINA DATOS (SETTINGS) -->
         <div id="page-settings" class="page">
-            <h2 class="section-title">GESTIÓN DE DATOS</h2>
-            <div class="form-card" style="text-align:center;">
-                <p style="color:#9fef00; font-weight:bold; margin-bottom:10px;">COPIA DE SEGURIDAD</p>
-                <p style="color:#888; font-size:13px; margin-bottom:20px; line-height:1.4;">
-                    Descarga un archivo con toda tu información para guardarla en tu computadora o enviarla por correo.
-                </p>
-                <button class="btn-main" onclick="downloadBackup()">
-                    💾 Descargar Respaldo (.JSON)
-                </button>
-                
-                <div style="margin-top:30px; border-top:1px dashed #2d4063; padding-top:20px;">
-                    <p style="color:#ff4b4b; font-weight:bold; margin-bottom:10px;">RESTAURAR INFORMACIÓN</p>
-                    <p style="color:#888; font-size:12px; margin-bottom:15px;">
-                        Carga un archivo de respaldo anterior. <br>⚠️ Esto reemplazará los datos actuales.
-                    </p>
-                    <input type="file" id="backupFile" accept=".json" style="margin-bottom:15px; color:#aaa; font-size:12px;">
-                    <button class="btn-main btn-secondary" onclick="restoreBackup()">📂 Cargar Respaldo</button>
+            
+            <!-- GESTIÓN DE PERSONAL -->
+            <div class="form-card">
+                <p class="input-label" style="color:#9fef00;">GESTIÓN DE PERSONAL</p>
+                <div class="add-inv-row">
+                    <input type="text" id="newWorkerName" placeholder="Nombre del empleado..." style="margin-bottom:0;">
+                    <button class="btn-main btn-add-mini" id="btnAddWorker">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </button>
+                </div>
+                <div id="workerListSettings" class="worker-list-container">
+                    <!-- Lista de empleados para borrar -->
                 </div>
             </div>
+
+            <!-- GESTIÓN DE CUENTA -->
+            <div class="form-card" style="text-align:center; border-color: #444;">
+                <p class="input-label" style="margin-bottom:15px;">CUENTA Y RESPALDO</p>
+                
+                <button class="btn-main btn-secondary" onclick="exportData()" style="margin-bottom: 15px;">
+                    📥 Exportar Historial (TXT)
+                </button>
+
+                <button id="btnLogout" class="btn-main" style="background: rgba(255, 75, 75, 0.1); color: #ff4b4b; border: 1px solid #ff4b4b; box-shadow:none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Cerrar Sesión
+                </button>
+            </div>
+            
             <div style="text-align:center; margin-top:40px; opacity:0.3; font-size:10px; font-family:monospace;">
-                HTB Control System v1.0<br>Desarrollado por Mael
+                HTB Control v16<br>Ingeniería de Sistemas
             </div>
         </div>
 
+        <!-- NAVBAR (Padding Reducido) -->
         <div class="nav">
             <button onclick="changePage('nomina')" class="active" id="btn-nomina">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                 <span>Pagos</span>
             </button>
             <button onclick="changePage('inventario')" id="btn-inventario">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
                 <span>Stock</span>
             </button>
             <button onclick="changePage('settings')" id="btn-settings">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 <span>Datos</span>
             </button>
         </div>
     </div>
 
+    <!-- MODAL SNAP -->
     <div id="snapModal">
         <div class="snap-container" id="captureTarget">
             <div class="snap-title" id="snapTitle">REPORTE</div>
             <div id="snapContent"></div>
-            <div class="snap-footer">CONTROL V1.0 - CONFIDENCIAL</div>
+            <div class="snap-footer">HTB CONTROL SYSTEM</div>
         </div>
         <div class="snap-actions">
             <button class="btn-snap-close" id="btnCloseSnap">
@@ -171,7 +190,7 @@
             </button>
             <button class="btn-snap-dl" id="btnDownloadSnap">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                Guardar Imagen
+                Guardar
             </button>
         </div>
     </div>
@@ -179,3 +198,5 @@
     <script type="module" src="script.js"></script>
 </body>
 </html>
+
+
